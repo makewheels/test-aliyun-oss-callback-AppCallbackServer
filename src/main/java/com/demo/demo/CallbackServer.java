@@ -1,48 +1,32 @@
 package com.demo.demo;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-///import com.aliyun.oss.OSSClient;
-//import com.aliyun.oss.common.utils.BinaryUtil;
-import java.net.URI;
-import java.security.KeyFactory;
-import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
-
-import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-//import org.apache.commons.codec.binary.Base64;
+import com.aliyun.oss.common.utils.BinaryUtil;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
-import com.aliyun.oss.common.utils.BinaryUtil;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
 
-
-//import com.aliyun.oss.common.utils.BinaryUtil;
-
-@SuppressWarnings("deprecation")
 @WebServlet(asyncSupported = true)
 public class CallbackServer extends HttpServlet {
-
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        System.out.println("用户输入url:" + request.getRequestURI());
-        response(request, response, "input get ", 200);
-    }
 
     public String executeGet(String url) {
         BufferedReader in = null;
         String content = null;
         try {
             // 定义HttpClient
-            @SuppressWarnings("resource")
             DefaultHttpClient client = new DefaultHttpClient();
             // 实例化HTTP方法
             HttpGet request = new HttpGet();
@@ -93,14 +77,17 @@ public class CallbackServer extends HttpServlet {
         return "";
     }
 
-    protected boolean VerifyOSSCallbackRequest(HttpServletRequest request, String ossCallbackBody) throws NumberFormatException, IOException {
+    protected boolean VerifyOSSCallbackRequest(
+            HttpServletRequest request, String ossCallbackBody)
+            throws NumberFormatException, IOException {
         boolean ret;
-        String autorizationInput = request.getHeader("Authorization");
+        String authorizationInput = request.getHeader("Authorization");
         String pubKeyInput = request.getHeader("x-oss-pub-key-url");
-        byte[] authorization = BinaryUtil.fromBase64String(autorizationInput);
+        byte[] authorization = BinaryUtil.fromBase64String(authorizationInput);
         byte[] pubKey = BinaryUtil.fromBase64String(pubKeyInput);
         String pubKeyAddr = new String(pubKey);
-        if (!pubKeyAddr.startsWith("http://gosspublic.alicdn.com/") && !pubKeyAddr.startsWith("https://gosspublic.alicdn.com/")) {
+        if (!pubKeyAddr.startsWith("http://gosspublic.alicdn.com/")
+                && !pubKeyAddr.startsWith("https://gosspublic.alicdn.com/")) {
             System.out.println("pub key addr must be oss addrss");
             return false;
         }
@@ -109,8 +96,7 @@ public class CallbackServer extends HttpServlet {
         retString = retString.replace("-----END PUBLIC KEY-----", "");
         String queryString = request.getQueryString();
         String uri = request.getRequestURI();
-        String decodeUri = java.net.URLDecoder.decode(uri, "UTF-8");
-        String authStr = decodeUri;
+        String authStr = URLDecoder.decode(uri, "UTF-8");
         if (queryString != null && !queryString.equals("")) {
             authStr += "?" + queryString;
         }
@@ -129,7 +115,8 @@ public class CallbackServer extends HttpServlet {
         if (ret) {
             response(request, response, "{\"Status\":\"OK\"}", HttpServletResponse.SC_OK);
         } else {
-            response(request, response, "{\"Status\":\"verdify not ok\"}", HttpServletResponse.SC_BAD_REQUEST);
+            response(request, response, "{\"Status\":\"verdify not ok\"}",
+                    HttpServletResponse.SC_BAD_REQUEST);
         }
     }
 

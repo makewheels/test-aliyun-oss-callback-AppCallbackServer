@@ -13,7 +13,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 public class App {
     public static void main(String[] args) throws Exception {
         Server server = new Server();
-        int port = 7090;//默认端口是：7090
+        int port = 5007;
         if (args.length > 0) {
             port = Integer.parseInt(args[0]);
         }
