@@ -35,12 +35,10 @@ public class CallbackServer extends HttpServlet {
             throws ServletException, IOException {
         System.out.println("用户输入url:" + request.getRequestURI());
         response(request, response, "input get ", 200);
-
     }
 
     public String executeGet(String url) {
         BufferedReader in = null;
-
         String content = null;
         try {
             // 定义HttpClient
@@ -52,8 +50,8 @@ public class CallbackServer extends HttpServlet {
             HttpResponse response = client.execute(request);
 
             in = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-            StringBuffer sb = new StringBuffer("");
-            String line = "";
+            StringBuffer sb = new StringBuffer();
+            String line;
             String NL = System.getProperty("line.separator");
             while ((line = in.readLine()) != null) {
                 sb.append(line + NL);
@@ -61,6 +59,7 @@ public class CallbackServer extends HttpServlet {
             in.close();
             content = sb.toString();
         } catch (Exception e) {
+            e.printStackTrace();
         } finally {
             if (in != null) {
                 try {
@@ -88,15 +87,15 @@ public class CallbackServer extends HttpServlet {
                 }
                 return new String(message);
             } catch (IOException e) {
+                e.printStackTrace();
             }
         }
         return "";
     }
 
-
     protected boolean VerifyOSSCallbackRequest(HttpServletRequest request, String ossCallbackBody) throws NumberFormatException, IOException {
-        boolean ret = false;
-        String autorizationInput = new String(request.getHeader("Authorization"));
+        boolean ret;
+        String autorizationInput = request.getHeader("Authorization");
         String pubKeyInput = request.getHeader("x-oss-pub-key-url");
         byte[] authorization = BinaryUtil.fromBase64String(autorizationInput);
         byte[] pubKey = BinaryUtil.fromBase64String(pubKeyInput);
@@ -121,8 +120,9 @@ public class CallbackServer extends HttpServlet {
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        String ossCallbackBody = GetPostBody(request.getInputStream(), Integer.parseInt(request.getHeader("content-length")));
+            throws IOException {
+        String ossCallbackBody = GetPostBody(request.getInputStream(),
+                Integer.parseInt(request.getHeader("content-length")));
         boolean ret = VerifyOSSCallbackRequest(request, ossCallbackBody);
         System.out.println("verify result:" + ret);
         System.out.println("OSS Callback Body:" + ossCallbackBody);
@@ -141,17 +141,15 @@ public class CallbackServer extends HttpServlet {
             java.security.Signature signature = java.security.Signature.getInstance("MD5withRSA");
             signature.initVerify(pubKey);
             signature.update(content.getBytes());
-            boolean bverify = signature.verify(sign);
-            return bverify;
-
+            return signature.verify(sign);
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return false;
     }
 
-    private void response(HttpServletRequest request, HttpServletResponse response, String results, int status) throws IOException {
+    private void response(HttpServletRequest request, HttpServletResponse response,
+                          String results, int status) throws IOException {
         String callbackFunName = request.getParameter("callback");
         response.addHeader("Content-Length", String.valueOf(results.length()));
         if (callbackFunName == null || callbackFunName.equalsIgnoreCase(""))
